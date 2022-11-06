@@ -31,11 +31,16 @@ module axis_tb;
       end
    end
 
+
    initial begin
-      connector.tready = '0;
-      #110;
-      connector.tready = '1;
+      #1ms;
+
+      $display("============================");
+      $display("======= TEST TIMEOUT =======");
+      $display("============================");
+      $finish;
    end
+
 
    axis_master_bfm dut_master(connector);
    axis_slave_bfm  dut_slave(connector);
