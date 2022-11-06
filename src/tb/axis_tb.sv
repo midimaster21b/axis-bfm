@@ -38,4 +38,5 @@ module axis_tb;
    end
 
    axis_master_bfm dut_master(connector);
+   axis_slave_bfm  dut_slave(connector);
 endmodule // axis_tb
