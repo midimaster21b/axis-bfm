@@ -15,7 +15,8 @@ module axis_master_bfm(conn);
    axis_beat empty_beat = '{default: '0};
    axis_beat not_empty_beat = '{
 				tvalid: '1,
-				tdata: 32'hABCD,
+				// tdata: 32'hABCD,
+				tdata: 8'hAA,
 				tstrb: '1,
 				tkeep: '1,
 				tlast: '1,
@@ -60,8 +61,8 @@ module axis_master_bfm(conn);
 
       #1;
 
-      write_beat(not_empty_beat);
       write_beat(empty_beat);
+      write_beat(not_empty_beat);
 
    end
 
