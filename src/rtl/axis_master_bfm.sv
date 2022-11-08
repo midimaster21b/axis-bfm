@@ -43,7 +43,7 @@ module axis_master_bfm(conn);
    /**************************************************************************
     * Add a beat to the queue of AXIS beats to be written
     **************************************************************************/
-   task add_beat;
+   task put_beat;
       input logic tvalid;
       input logic [$bits(conn.tdata)-1:0] tdata;
       input logic [$bits(conn.tstrb)-1:0] tstrb;
@@ -69,19 +69,19 @@ module axis_master_bfm(conn);
 	 axis_inbox.put(temp);
 
       end
-   endtask // add_beat
+   endtask // put_beat
 
 
    /**************************************************************************
     * Add a basic beat to the queue of AXIS beats to be written. A basic beat
     * only requires data and last to be specified.
     **************************************************************************/
-   task add_basic_beat;
+   task put_simple_beat;
       input logic [$bits(conn.tdata)-1:0] tdata;
       input logic			  tlast;
 
       begin
-	 add_beat(.tvalid('1),
+	 put_beat(.tvalid('1),
 		  .tdata(tdata),
 		  .tstrb('1),
 		  .tkeep('1),
@@ -90,7 +90,7 @@ module axis_master_bfm(conn);
 		  .tdest('0),
 		  .tuser('0));
       end
-   endtask // add_beat
+   endtask // put_simple_beat
 
 
    initial begin
