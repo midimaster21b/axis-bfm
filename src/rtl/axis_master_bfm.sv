@@ -10,30 +10,22 @@ module axis_master_bfm(conn);
       logic			    tid;
       logic [$bits(conn.tdest)-1:0] tdest;
       logic [$bits(conn.tuser)-1:0] tuser;
-   } axis_beat;
+   } axis_beat_t;
 
-   axis_beat empty_beat = '{default: '0};
-   axis_beat not_empty_beat = '{
-				tvalid: '1,
-				// tdata: 32'hABCD,
-				tdata: 8'hAA,
-				tstrb: '1,
-				tkeep: '1,
-				tlast: '1,
-				tid: '0,
-				tdest: '0,
-				tuser: '0
-				};
+   typedef mailbox		    #(axis_beat_t) axis_inbox_t;
 
+   axis_inbox_t axis_inbox = new();
+
+   axis_beat_t empty_beat = '{default: '0};
+   axis_beat_t temp_beat;
+
+   /**************************************************************************
+    * Writes a beat to the AXIS BFM output lines
+    **************************************************************************/
    task write_beat;
-      input axis_beat temp;
+      input axis_beat_t temp;
 
       begin
-	 // Wait for device ready
-	 while (conn.tready != '1) begin
-	    @(posedge conn.aclk);
-	 end
-
 	 // Write output beat
 	 conn.tvalid <= temp.tvalid;
 	 conn.tdata  <= temp.tdata;
@@ -44,12 +36,66 @@ module axis_master_bfm(conn);
 	 conn.tdest  <= temp.tdest;
 	 conn.tuser  <= temp.tuser;
 
-	 @(posedge conn.aclk);
       end
    endtask // write_beat
 
 
+   /**************************************************************************
+    * Add a beat to the queue of AXIS beats to be written
+    **************************************************************************/
+   task add_beat;
+      input logic tvalid;
+      input logic [$bits(conn.tdata)-1:0] tdata;
+      input logic [$bits(conn.tstrb)-1:0] tstrb;
+      input logic [$bits(conn.tkeep)-1:0] tkeep;
+      input logic			  tlast;
+      input logic			  tid;
+      input logic [$bits(conn.tdest)-1:0] tdest;
+      input logic [$bits(conn.tuser)-1:0] tuser;
+
+      axis_beat_t temp;
+
+      begin
+	 temp.tvalid = tvalid;
+	 temp.tdata  = tdata;
+	 temp.tstrb  = tstrb;
+	 temp.tkeep  = tkeep;
+	 temp.tlast  = tlast;
+	 temp.tid    = tid;
+	 temp.tdest  = tdest;
+	 temp.tuser  = tuser;
+
+	 // Add output beat to mailbox
+	 axis_inbox.put(temp);
+
+      end
+   endtask // add_beat
+
+
+   /**************************************************************************
+    * Add a basic beat to the queue of AXIS beats to be written. A basic beat
+    * only requires data and last to be specified.
+    **************************************************************************/
+   task add_basic_beat;
+      input logic [$bits(conn.tdata)-1:0] tdata;
+      input logic			  tlast;
+
+      begin
+	 add_beat(.tvalid('1),
+		  .tdata(tdata),
+		  .tstrb('1),
+		  .tkeep('1),
+		  .tlast(tlast),
+		  .tid('0),
+		  .tdest('0),
+		  .tuser('0));
+      end
+   endtask // add_beat
+
+
    initial begin
+      $timeformat(-9, 2, " ns", 20);
+
       conn.tvalid = '0;
       conn.tdata  = '0;
       conn.tstrb  = '0;
@@ -61,9 +107,25 @@ module axis_master_bfm(conn);
 
       #1;
 
-      write_beat(empty_beat);
-      write_beat(not_empty_beat);
+      forever begin
+	 // Wait for the next clock cycle
+	 @(posedge conn.aclk);
 
+	 if(axis_inbox.try_get(temp_beat) != 0) begin
+	    write_beat(temp_beat);
+
+	    $display("%t: AXIS Master - Write Data - '%x'", $time, temp_beat.tdata);
+
+	    // Wait for device ready
+	    while (conn.tready != '1) begin
+	       @(posedge conn.aclk);
+	    end
+
+	 end else begin
+	    write_beat(empty_beat);
+
+	 end
+      end
    end
 
 endmodule // axis_master_bfm
