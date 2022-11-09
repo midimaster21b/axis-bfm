@@ -24,6 +24,8 @@ module axis_slave_bfm(conn);
       axis_beat_t temp;
 
       begin
+	 $timeformat(-9, 2, " ns", 20);
+
 	 // Set ready signal
 	 conn.tready <= '1;
 
@@ -32,22 +34,21 @@ module axis_slave_bfm(conn);
 	 end
 
 	 // Write output beat
-	 temp.tdata  <= conn.tdata;
-	 temp.tstrb  <= conn.tstrb;
-	 temp.tkeep  <= conn.tkeep;
-	 temp.tlast  <= conn.tlast;
-	 temp.tid    <= conn.tid;
-	 temp.tdest  <= conn.tdest;
-	 temp.tuser  <= conn.tuser;
+	 temp.tdata  = conn.tdata;
+	 temp.tstrb  = conn.tstrb;
+	 temp.tkeep  = conn.tkeep;
+	 temp.tlast  = conn.tlast;
+	 temp.tid    = conn.tid;
+	 temp.tdest  = conn.tdest;
+	 temp.tuser  = conn.tuser;
 
+	 $display("%t: AXIS Slave - Putting Data - '%x'", $time, temp.tdata);
 	 axis_inbox.put(temp);
 
 	 @(posedge conn.aclk);
 	 // Set ready signal
 	 conn.tready <= '0;
 
-	 $timeformat(-9, 2, " ns", 20);
-	 $display("%t: AXIS Slave - Read Data - '%x'", $time, temp.tdata);
 
       end
    endtask // read_beat
@@ -71,13 +72,13 @@ module axis_slave_bfm(conn);
 	 axis_inbox.get(temp);
 
 	 // Write output beat
-	 tdata  <= temp.tdata;
-	 tstrb  <= temp.tstrb;
-	 tkeep  <= temp.tkeep;
-	 tlast  <= temp.tlast;
-	 tid    <= temp.tid;
-	 tdest  <= temp.tdest;
-	 tuser  <= temp.tuser;
+	 tdata  = temp.tdata;
+	 tstrb  = temp.tstrb;
+	 tkeep  = temp.tkeep;
+	 tlast  = temp.tlast;
+	 tid    = temp.tid;
+	 tdest  = temp.tdest;
+	 tuser  = temp.tuser;
       end
    endtask
 
@@ -95,8 +96,8 @@ module axis_slave_bfm(conn);
 	 axis_inbox.get(temp);
 
 	 // Write output beat
-	 tdata  <= temp.tdata;
-	 tlast  <= temp.tlast;
+	 tdata  = temp.tdata;
+	 tlast  = temp.tlast;
       end
    endtask
 
