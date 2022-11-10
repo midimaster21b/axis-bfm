@@ -102,6 +102,28 @@ module axis_slave_bfm(conn);
    endtask
 
 
+   /**************************************************************************
+    * Get a simple beat with tuser from the mailbox when one is available.
+    * [Blocking]
+    **************************************************************************/
+   task get_user_beat;
+      output logic [$bits(conn.tdata)-1:0] tdata;
+      output logic			   tlast;
+      output logic [$bits(conn.tuser)-1:0] tuser;
+
+      axis_beat_t temp;
+
+      begin
+	 axis_inbox.get(temp);
+
+	 // Write output beat
+	 tdata  = temp.tdata;
+	 tlast  = temp.tlast;
+	 tuser  = temp.tuser;
+      end
+   endtask
+
+
    initial begin
       conn.tready  = '0;
       #1;
