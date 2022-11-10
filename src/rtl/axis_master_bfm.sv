@@ -128,23 +128,26 @@ module axis_master_bfm(conn);
       conn.tuser  = '0;
 
       #1;
+      @(posedge conn.aclk);
 
       forever begin
-	 // Wait for the next clock cycle
-	 @(posedge conn.aclk);
-
 	 if(axis_inbox.try_get(temp_beat) != 0) begin
 	    write_beat(temp_beat);
 
 	    $display("%t: AXIS Master - Write Data - '%x'", $time, temp_beat.tdata);
 
-	    // Wait for device ready
-	    while (conn.tready != '1) begin
-	       @(posedge conn.aclk);
+	    if(conn.tready == '0) begin
+	       wait(conn.tready == '1);
 	    end
+
+	    // Wait for device ready
+	    @(posedge conn.aclk && conn.tready == '1);
 
 	 end else begin
 	    write_beat(empty_beat);
+
+	    // Wait for the next clock cycle
+	    @(posedge conn.aclk);
 
 	 end
       end
