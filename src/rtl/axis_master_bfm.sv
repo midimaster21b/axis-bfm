@@ -93,6 +93,28 @@ module axis_master_bfm(conn);
    endtask // put_simple_beat
 
 
+   /**************************************************************************
+    * Add a simple beat with a tuser value to the queue of AXIS beats to be
+    * written.
+    **************************************************************************/
+   task put_user_beat;
+      input logic [$bits(conn.tdata)-1:0] tdata;
+      input logic			  tlast;
+      input logic [$bits(conn.tuser)-1:0] tuser;
+
+      begin
+	 put_beat(.tvalid('1),
+		  .tdata(tdata),
+		  .tstrb('1),
+		  .tkeep('1),
+		  .tlast(tlast),
+		  .tid('0),
+		  .tdest('0),
+		  .tuser(tuser));
+      end
+   endtask // put_user_beat
+
+
    initial begin
       $timeformat(-9, 2, " ns", 20);
 
