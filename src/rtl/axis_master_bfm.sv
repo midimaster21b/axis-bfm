@@ -128,7 +128,6 @@ module axis_master_bfm(conn);
       conn.tuser  = '0;
 
       #1;
-      @(posedge conn.aclk);
 
       forever begin
 	 if(axis_inbox.try_get(temp_beat) != 0) begin
@@ -136,6 +135,7 @@ module axis_master_bfm(conn);
 
 	    $display("%t: AXIS Master - Write Data - '%x'", $time, temp_beat.tdata);
 
+	    @(negedge conn.aclk)
 	    if(conn.tready == '0) begin
 	       wait(conn.tready == '1);
 	    end
