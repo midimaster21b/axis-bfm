@@ -14,7 +14,8 @@ module axis_master_bfm(conn);
 
    typedef mailbox		    #(axis_beat_t) axis_inbox_t;
 
-   axis_inbox_t axis_inbox = new();
+   axis_inbox_t axis_inbox  = new();
+   axis_inbox_t axis_expect = new();
 
    axis_beat_t empty_beat = '{default: '0};
    axis_beat_t temp_beat;
@@ -67,9 +68,74 @@ module axis_master_bfm(conn);
 
 	 // Add output beat to mailbox
 	 axis_inbox.put(temp);
+	 axis_expect.put(temp);
 
       end
    endtask // put_beat
+
+
+   /**************************************************************************
+    * Get the oldest beat written to the queue of AXIS beats.
+    **************************************************************************/
+   task get_beat;
+      output logic                         tvalid;
+      output logic [$bits(conn.tdata)-1:0] tdata;
+      output logic [$bits(conn.tstrb)-1:0] tstrb;
+      output logic [$bits(conn.tkeep)-1:0] tkeep;
+      output logic			   tlast;
+      output logic			   tid;
+      output logic [$bits(conn.tdest)-1:0] tdest;
+      output logic [$bits(conn.tuser)-1:0] tuser;
+
+      axis_beat_t temp;
+
+      begin
+	 // Get output beat from mailbox
+	 axis_expect.get(temp);
+
+	 // Assign beat values to outputs
+	 tvalid = temp.tvalid;
+	 tdata  = temp.tdata;
+	 tstrb  = temp.tstrb;
+	 tkeep  = temp.tkeep;
+	 tlast  = temp.tlast;
+	 tid    = temp.tid;
+	 tdest  = temp.tdest;
+	 tuser  = temp.tuser;
+
+      end
+   endtask // get_beat
+
+
+   /**************************************************************************
+    * Get the oldest beat written to the queue of AXIS beats.
+    **************************************************************************/
+   task get_user_beat;
+      output logic [$bits(conn.tdata)-1:0] tdata;
+      output logic			   tlast;
+      output logic [$bits(conn.tuser)-1:0] tuser;
+
+      axis_beat_t temp;
+
+      begin
+	 get_beat(
+		  .tvalid (temp.tvalid),
+		  .tdata  (temp.tdata),
+		  .tstrb  (temp.tstrb),
+		  .tkeep  (temp.tkeep),
+		  .tlast  (temp.tlast),
+		  .tid    (temp.tid),
+		  .tdest  (temp.tdest),
+		  .tuser  (temp.tuser)
+		  );
+
+	 // Assign beat values to outputs
+	 tdata  = temp.tdata;
+	 tlast  = temp.tlast;
+	 tuser  = temp.tuser;
+
+      end
+   endtask // get_beat
 
 
    /**************************************************************************
