@@ -8,7 +8,9 @@ filesets:
       - src/rtl/axis_slave_bfm.sv
       - src/rtl/axis_master_bfm.sv
     file_type: systemVerilogSource
-    depend: [midimaster21b:comm:amba-interfaces]
+    depend:
+      - midimaster21b:comm:amba-interfaces
+      - midimaster21b:comm:handshake>=0.1.2
 
   tb:
     files:

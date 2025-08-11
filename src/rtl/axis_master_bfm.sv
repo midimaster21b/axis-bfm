@@ -1,8 +1,9 @@
 module axis_master_bfm(conn);
    axis_if conn;
 
-   typedef struct {
-      logic tvalid;
+   // NOTE: This needs to be consistent with the offset ordering in the
+   // interface assignments in the bottom section.
+   typedef struct packed {
       logic [$bits(conn.tdata)-1:0] tdata;
       logic [$bits(conn.tstrb)-1:0] tstrb;
       logic [$bits(conn.tkeep)-1:0] tkeep;
@@ -15,49 +16,24 @@ module axis_master_bfm(conn);
    typedef mailbox		    #(axis_beat_t) axis_inbox_t;
 
    axis_inbox_t axis_inbox  = new();
-   axis_inbox_t axis_expect = new();
-
-   axis_beat_t empty_beat = '{default: '0};
-   axis_beat_t temp_beat;
-
-   /**************************************************************************
-    * Writes a beat to the AXIS BFM output lines
-    **************************************************************************/
-   task write_beat;
-      input axis_beat_t temp;
-
-      begin
-	 // Write output beat
-	 conn.tvalid <= temp.tvalid;
-	 conn.tdata  <= temp.tdata;
-	 conn.tstrb  <= temp.tstrb;
-	 conn.tkeep  <= temp.tkeep;
-	 conn.tlast  <= temp.tlast;
-	 conn.tid    <= temp.tid;
-	 conn.tdest  <= temp.tdest;
-	 conn.tuser  <= temp.tuser;
-
-      end
-   endtask // write_beat
-
+   // axis_inbox_t axis_expect = new();
 
    /**************************************************************************
     * Add a beat to the queue of AXIS beats to be written
     **************************************************************************/
-   task put_beat;
-      input logic tvalid;
-      input logic [$bits(conn.tdata)-1:0] tdata;
-      input logic [$bits(conn.tstrb)-1:0] tstrb;
-      input logic [$bits(conn.tkeep)-1:0] tkeep;
-      input logic			  tlast;
-      input logic			  tid;
-      input logic [$bits(conn.tdest)-1:0] tdest;
-      input logic [$bits(conn.tuser)-1:0] tuser;
+   task write (
+		input logic [$bits(conn.tdata)-1:0] tdata = 0,
+		input logic [$bits(conn.tstrb)-1:0] tstrb = 0,
+		input logic [$bits(conn.tkeep)-1:0] tkeep = 0,
+		input logic			    tlast = 0,
+		input logic			    tid   = 0,
+		input logic [$bits(conn.tdest)-1:0] tdest = 0,
+		input logic [$bits(conn.tuser)-1:0] tuser = 0
+	       );
 
       axis_beat_t temp;
 
       begin
-	 temp.tvalid = tvalid;
 	 temp.tdata  = tdata;
 	 temp.tstrb  = tstrb;
 	 temp.tkeep  = tkeep;
@@ -67,156 +43,41 @@ module axis_master_bfm(conn);
 	 temp.tuser  = tuser;
 
 	 // Add output beat to mailbox
-	 axis_inbox.put(temp);
-	 axis_expect.put(temp);
+	 $timeformat(-9, 2, " ns", 20);
+	 $display("%t: m_axis - Write Data - Data: %X, Keep: %x, Last: %x, User: %x", $time, temp.tdata, temp.tkeep, temp.tlast, temp.tuser);
+	 m_axis.put_simple_beat(temp);
 
       end
-   endtask // put_beat
+   endtask // write
 
 
-   /**************************************************************************
-    * Get the oldest beat written to the queue of AXIS beats.
-    **************************************************************************/
-   task get_beat;
-      output logic                         tvalid;
-      output logic [$bits(conn.tdata)-1:0] tdata;
-      output logic [$bits(conn.tstrb)-1:0] tstrb;
-      output logic [$bits(conn.tkeep)-1:0] tkeep;
-      output logic			   tlast;
-      output logic			   tid;
-      output logic [$bits(conn.tdest)-1:0] tdest;
-      output logic [$bits(conn.tuser)-1:0] tuser;
+   ////////////////////////////////////////////////////////////////////////////
+   ////////////////////////////////////////////////////////////////////////////
+   // Interface connections
+   ////////////////////////////////////////////////////////////////////////////
+   ////////////////////////////////////////////////////////////////////////////
+   localparam HS_BUS_WIDTH = $bits(axis_beat_t);
 
-      axis_beat_t temp;
+   localparam TUSER_BASE = 0;
+   localparam TDEST_BASE = TUSER_BASE + $bits(conn.tuser);
+   localparam TID_BASE   = TDEST_BASE + $bits(conn.tdest);
+   localparam TLAST_BASE = TID_BASE   + $bits(conn.tid);
+   localparam TKEEP_BASE = TLAST_BASE + $bits(conn.tlast);
+   localparam TSTRB_BASE = TKEEP_BASE + $bits(conn.tkeep);
+   localparam TDATA_BASE = TSTRB_BASE + $bits(conn.tstrb);
 
-      begin
-	 // Get output beat from mailbox
-	 axis_expect.get(temp);
+   // Write address channel
+   handshake_if     #(.DATA_BITS(HS_BUS_WIDTH)) axis_conn(.clk(conn.aclk), .rst(conn.aresetn));
+   handshake_master #(.IFACE_NAME("m_axis"), .VERBOSE("FALSE")) m_axis (axis_conn);
 
-	 // Assign beat values to outputs
-	 tvalid = temp.tvalid;
-	 tdata  = temp.tdata;
-	 tstrb  = temp.tstrb;
-	 tkeep  = temp.tkeep;
-	 tlast  = temp.tlast;
-	 tid    = temp.tid;
-	 tdest  = temp.tdest;
-	 tuser  = temp.tuser;
-
-      end
-   endtask // get_beat
-
-
-   /**************************************************************************
-    * Get the oldest beat written to the queue of AXIS beats.
-    **************************************************************************/
-   task get_user_beat;
-      output logic [$bits(conn.tdata)-1:0] tdata;
-      output logic			   tlast;
-      output logic [$bits(conn.tuser)-1:0] tuser;
-
-      axis_beat_t temp;
-
-      begin
-	 get_beat(
-		  .tvalid (temp.tvalid),
-		  .tdata  (temp.tdata),
-		  .tstrb  (temp.tstrb),
-		  .tkeep  (temp.tkeep),
-		  .tlast  (temp.tlast),
-		  .tid    (temp.tid),
-		  .tdest  (temp.tdest),
-		  .tuser  (temp.tuser)
-		  );
-
-	 // Assign beat values to outputs
-	 tdata  = temp.tdata;
-	 tlast  = temp.tlast;
-	 tuser  = temp.tuser;
-
-      end
-   endtask // get_beat
-
-
-   /**************************************************************************
-    * Add a basic beat to the queue of AXIS beats to be written. A basic beat
-    * only requires data and last to be specified.
-    **************************************************************************/
-   task put_simple_beat;
-      input logic [$bits(conn.tdata)-1:0] tdata;
-      input logic			  tlast;
-
-      begin
-	 put_beat(.tvalid('1),
-		  .tdata(tdata),
-		  .tstrb('1),
-		  .tkeep('1),
-		  .tlast(tlast),
-		  .tid('0),
-		  .tdest('0),
-		  .tuser('0));
-      end
-   endtask // put_simple_beat
-
-
-   /**************************************************************************
-    * Add a simple beat with a tuser value to the queue of AXIS beats to be
-    * written.
-    **************************************************************************/
-   task put_user_beat;
-      input logic [$bits(conn.tdata)-1:0] tdata;
-      input logic			  tlast;
-      input logic [$bits(conn.tuser)-1:0] tuser;
-
-      begin
-	 put_beat(.tvalid('1),
-		  .tdata(tdata),
-		  .tstrb('1),
-		  .tkeep('1),
-		  .tlast(tlast),
-		  .tid('0),
-		  .tdest('0),
-		  .tuser(tuser));
-      end
-   endtask // put_user_beat
-
-
-   initial begin
-      $timeformat(-9, 2, " ns", 20);
-
-      conn.tvalid = '0;
-      conn.tdata  = '0;
-      conn.tstrb  = '0;
-      conn.tkeep  = '0;
-      conn.tlast  = '0;
-      conn.tid    = '0;
-      conn.tdest  = '0;
-      conn.tuser  = '0;
-
-      #1;
-
-      forever begin
-	 if(axis_inbox.try_get(temp_beat) != 0) begin
-	    write_beat(temp_beat);
-
-	    $display("%t: AXIS Master - Write Data - '%x'", $time, temp_beat.tdata);
-
-	    @(negedge conn.aclk)
-	    if(conn.tready == '0) begin
-	       wait(conn.tready == '1);
-	    end
-
-	    // Wait for device ready
-	    @(posedge conn.aclk && conn.tready == '1);
-
-	 end else begin
-	    write_beat(empty_beat);
-
-	    // Wait for the next clock cycle
-	    @(posedge conn.aclk);
-
-	 end
-      end
-   end
+   assign conn.tvalid     = axis_conn.valid;
+   assign axis_conn.ready = conn.tready;
+   assign conn.tdata      = axis_conn.data[($bits(conn.tdata)-1)+TDATA_BASE:TDATA_BASE];
+   assign conn.tstrb      = axis_conn.data[($bits(conn.tstrb)-1)+TSTRB_BASE:TSTRB_BASE];
+   assign conn.tkeep      = axis_conn.data[($bits(conn.tkeep)-1)+TKEEP_BASE:TKEEP_BASE];
+   assign conn.tlast      = axis_conn.data[($bits(conn.tlast)-1)+TLAST_BASE:TLAST_BASE];
+   assign conn.tid        = axis_conn.data[($bits(conn.tid  )-1)+TID_BASE  :TID_BASE  ];
+   assign conn.tdest      = axis_conn.data[($bits(conn.tdest)-1)+TDEST_BASE:TDEST_BASE];
+   assign conn.tuser      = axis_conn.data[($bits(conn.tuser)-1)+TUSER_BASE:TUSER_BASE];
 
 endmodule // axis_master_bfm
