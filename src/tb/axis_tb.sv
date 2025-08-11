@@ -22,8 +22,6 @@ module axis_tb;
    logic [0:0]	test_tdest;
    logic [0:0]	test_tuser;
 
-
-
    axis_if connector(.aclk(clk), .aresetn(rstn));
 
    assign tvalid = connector.tvalid;

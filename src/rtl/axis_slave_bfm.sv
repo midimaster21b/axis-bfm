@@ -97,6 +97,14 @@ module axis_slave_bfm #(parameter
    ////////////////////////////////////////////////////////////////////////////
    localparam HS_BUS_WIDTH = $bits(axis_beat_t);
 
+   localparam TUSER_WIDTH = ($bits(conn.tuser) > 0) ? $bits(conn.tuser) : 1;
+   localparam TDEST_WIDTH = ($bits(conn.tdest) > 0) ? $bits(conn.tdest) : 1;
+   localparam TID_WIDTH   = ($bits(conn.tid  ) > 0) ? $bits(conn.tid  ) : 1;
+   localparam TLAST_WIDTH = ($bits(conn.tlast) > 0) ? $bits(conn.tlast) : 1;
+   localparam TKEEP_WIDTH = ($bits(conn.tkeep) > 0) ? $bits(conn.tkeep) : 1;
+   localparam TSTRB_WIDTH = ($bits(conn.tstrb) > 0) ? $bits(conn.tstrb) : 1;
+   localparam TDATA_WIDTH = ($bits(conn.tdata) > 0) ? $bits(conn.tdata) : 1;
+
    localparam TUSER_BASE = 0;
    localparam TDEST_BASE = TUSER_BASE + $bits(conn.tuser);
    localparam TID_BASE   = TDEST_BASE + $bits(conn.tdest);
@@ -105,20 +113,20 @@ module axis_slave_bfm #(parameter
    localparam TSTRB_BASE = TKEEP_BASE + $bits(conn.tkeep);
    localparam TDATA_BASE = TSTRB_BASE + $bits(conn.tstrb);
 
+
    // Write address channel
    handshake_if    #(.DATA_BITS(HS_BUS_WIDTH)) axis_conn(.clk(conn.aclk), .rst(conn.aresetn));
-   // handshake_slave #(.IFACE_NAME("s_axis"), .ALWAYS_READY(ALWAYS_READY), .FAIL_ON_MISMATCH(FAIL_ON_MISMATCH), .VERBOSE("FALSE")) s_axis (axis_conn);
    handshake_slave #(.IFACE_NAME("s_axis"), .ALWAYS_READY('1), .FAIL_ON_MISMATCH(FAIL_ON_MISMATCH), .VERBOSE("FALSE")) s_axis (axis_conn);
 
-   assign axis_conn.valid                                             = conn.tvalid;
-   assign conn.tready                                                 = axis_conn.ready;
-   assign axis_conn.data[($bits(conn.tdata)-1)+TDATA_BASE:TDATA_BASE] = conn.tdata;
-   assign axis_conn.data[($bits(conn.tstrb)-1)+TSTRB_BASE:TSTRB_BASE] = conn.tstrb;
-   assign axis_conn.data[($bits(conn.tkeep)-1)+TKEEP_BASE:TKEEP_BASE] = conn.tkeep;
-   assign axis_conn.data[($bits(conn.tlast)-1)+TLAST_BASE:TLAST_BASE] = conn.tlast;
-   assign axis_conn.data[($bits(conn.tid  )-1)+TID_BASE  :TID_BASE  ] = conn.tid;
-   assign axis_conn.data[($bits(conn.tdest)-1)+TDEST_BASE:TDEST_BASE] = conn.tdest;
-   assign axis_conn.data[($bits(conn.tuser)-1)+TUSER_BASE:TUSER_BASE] = conn.tuser;
+   assign axis_conn.valid                                   = conn.tvalid;
+   assign conn.tready                                       = axis_conn.ready;
+   assign axis_conn.data[TDATA_WIDTH+TDATA_BASE:TDATA_BASE] = conn.tdata;
+   assign axis_conn.data[TSTRB_WIDTH+TSTRB_BASE:TSTRB_BASE] = conn.tstrb;
+   assign axis_conn.data[TKEEP_WIDTH+TKEEP_BASE:TKEEP_BASE] = conn.tkeep;
+   assign axis_conn.data[TLAST_WIDTH+TLAST_BASE:TLAST_BASE] = conn.tlast;
+   assign axis_conn.data[TID_WIDTH  +TID_BASE  :TID_BASE  ] = conn.tid;
+   assign axis_conn.data[TDEST_WIDTH+TDEST_BASE:TDEST_BASE] = conn.tdest;
+   assign axis_conn.data[TUSER_WIDTH+TUSER_BASE:TUSER_BASE] = conn.tuser;
 
 
 endmodule // axis_slave_bfm

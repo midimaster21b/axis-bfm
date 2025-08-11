@@ -45,6 +45,7 @@ module axis_master_bfm(conn);
 	 // Add output beat to mailbox
 	 $timeformat(-9, 2, " ns", 20);
 	 $display("%t: m_axis - Write Data - Data: %X, Keep: %x, Last: %x, User: %x", $time, temp.tdata, temp.tkeep, temp.tlast, temp.tuser);
+	 $display("%t: m_axis - Write Data - Data: %X", $time, temp);
 	 m_axis.put_simple_beat(temp);
 
       end
@@ -57,6 +58,14 @@ module axis_master_bfm(conn);
    ////////////////////////////////////////////////////////////////////////////
    ////////////////////////////////////////////////////////////////////////////
    localparam HS_BUS_WIDTH = $bits(axis_beat_t);
+
+   localparam TUSER_WIDTH = ($bits(conn.tuser) > 0) ? $bits(conn.tuser) : 1;
+   localparam TDEST_WIDTH = ($bits(conn.tdest) > 0) ? $bits(conn.tdest) : 1;
+   localparam TID_WIDTH   = ($bits(conn.tid  ) > 0) ? $bits(conn.tid  ) : 1;
+   localparam TLAST_WIDTH = ($bits(conn.tlast) > 0) ? $bits(conn.tlast) : 1;
+   localparam TKEEP_WIDTH = ($bits(conn.tkeep) > 0) ? $bits(conn.tkeep) : 1;
+   localparam TSTRB_WIDTH = ($bits(conn.tstrb) > 0) ? $bits(conn.tstrb) : 1;
+   localparam TDATA_WIDTH = ($bits(conn.tdata) > 0) ? $bits(conn.tdata) : 1;
 
    localparam TUSER_BASE = 0;
    localparam TDEST_BASE = TUSER_BASE + $bits(conn.tuser);
@@ -72,12 +81,12 @@ module axis_master_bfm(conn);
 
    assign conn.tvalid     = axis_conn.valid;
    assign axis_conn.ready = conn.tready;
-   assign conn.tdata      = axis_conn.data[($bits(conn.tdata)-1)+TDATA_BASE:TDATA_BASE];
-   assign conn.tstrb      = axis_conn.data[($bits(conn.tstrb)-1)+TSTRB_BASE:TSTRB_BASE];
-   assign conn.tkeep      = axis_conn.data[($bits(conn.tkeep)-1)+TKEEP_BASE:TKEEP_BASE];
-   assign conn.tlast      = axis_conn.data[($bits(conn.tlast)-1)+TLAST_BASE:TLAST_BASE];
-   assign conn.tid        = axis_conn.data[($bits(conn.tid  )-1)+TID_BASE  :TID_BASE  ];
-   assign conn.tdest      = axis_conn.data[($bits(conn.tdest)-1)+TDEST_BASE:TDEST_BASE];
-   assign conn.tuser      = axis_conn.data[($bits(conn.tuser)-1)+TUSER_BASE:TUSER_BASE];
+   assign conn.tdata      = axis_conn.data[TDATA_WIDTH+TDATA_BASE:TDATA_BASE];
+   assign conn.tstrb      = axis_conn.data[TSTRB_WIDTH+TSTRB_BASE:TSTRB_BASE];
+   assign conn.tkeep      = axis_conn.data[TKEEP_WIDTH+TKEEP_BASE:TKEEP_BASE];
+   assign conn.tlast      = axis_conn.data[TLAST_WIDTH+TLAST_BASE:TLAST_BASE];
+   assign conn.tid        = axis_conn.data[TID_WIDTH  +TID_BASE  :TID_BASE  ];
+   assign conn.tdest      = axis_conn.data[TDEST_WIDTH+TDEST_BASE:TDEST_BASE];
+   assign conn.tuser      = axis_conn.data[TUSER_WIDTH+TUSER_BASE:TUSER_BASE];
 
 endmodule // axis_master_bfm
