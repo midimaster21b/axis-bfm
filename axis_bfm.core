@@ -1,5 +1,5 @@
 CAPI=2:
-name: midimaster21b:bfm:axis:0.1.0
+name: midimaster21b:bfm:axis:0.2.0
 description: A basic AXIS BFM
 
 filesets:
@@ -10,7 +10,7 @@ filesets:
     file_type: systemVerilogSource
     depend:
       - midimaster21b:comm:amba-interfaces
-      - midimaster21b:comm:handshake>=0.1.2
+      - ">=midimaster21b:comm:handshake:0.1.2"
 
   tb:
     files:
