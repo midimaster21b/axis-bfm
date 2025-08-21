@@ -1,18 +1,18 @@
 module axis_slave_bfm #(parameter
 			ALWAYS_READY=1,
 			FAIL_ON_MISMATCH=0,
-			IFACE_NAME="s_axis"
+			BFM_NAME="s_axis"
 			) (conn);
    axis_if conn;
 
    typedef struct packed {
-      logic [$bits(conn.tdata)-1:0] tdata;
-      logic [$bits(conn.tstrb)-1:0] tstrb;
-      logic [$bits(conn.tkeep)-1:0] tkeep;
-      logic			    tlast;
-      logic [$bits(conn.tid)-1:0]   tid;
-      logic [$bits(conn.tdest)-1:0] tdest;
-      logic [$bits(conn.tuser)-1:0] tuser;
+      logic [conn.NUM_DATA_BITS-1:0] tdata;
+      logic [conn.NUM_STRB_BITS-1:0] tstrb;
+      logic [conn.NUM_KEEP_BITS-1:0] tkeep;
+      logic			     tlast;
+      logic [conn.NUM_ID_BITS-1:0  ] tid;
+      logic [conn.NUM_DEST_BITS-1:0] tdest;
+      logic [conn.NUM_USER_BITS-1:0] tuser;
    } axis_beat_t;
 
    typedef mailbox		    #(axis_beat_t) axis_inbox_t;
@@ -27,13 +27,13 @@ module axis_slave_bfm #(parameter
     * available.
     **************************************************************************/
    task read (
-		output logic [$bits(conn.tdata)-1:0] tdata,
-		output logic [$bits(conn.tstrb)-1:0] tstrb,
-		output logic [$bits(conn.tkeep)-1:0] tkeep,
-		output logic			     tlast,
-		output logic [$bits(conn.tid)-1:0]   tid,
-		output logic [$bits(conn.tdest)-1:0] tdest,
-		output logic [$bits(conn.tuser)-1:0] tuser
+	       output logic [conn.NUM_DATA_BITS-1:0] tdata,
+	       output logic [conn.NUM_STRB_BITS-1:0] tstrb,
+	       output logic [conn.NUM_KEEP_BITS-1:0] tkeep,
+	       output logic			     tlast,
+	       output logic [conn.NUM_ID_BITS-1:0  ] tid,
+	       output logic [conn.NUM_DEST_BITS-1:0] tdest,
+	       output logic [conn.NUM_USER_BITS-1:0] tuser
 	       );
 
       axis_beat_t temp;
@@ -44,7 +44,7 @@ module axis_slave_bfm #(parameter
 
 	 // Output that a beat was received
 	 $timeformat(-9, 2, " ns", 20);
-	 $display("%t: s_axis - Received Data - Data: %X, Keep: %x, Last: %x, User: %x", $time, temp.tdata, temp.tkeep, temp.tlast, temp.tuser);
+	 $display("%t: %s - Received Data - Data: %X, Keep: %x, Last: %x, User: %x", $time, BFM_NAME, temp.tdata, temp.tkeep, temp.tlast, temp.tuser);
 
 	 // Output the beat information to data lines
 	 tdata = temp.tdata;
@@ -62,13 +62,13 @@ module axis_slave_bfm #(parameter
     * Add a beat to the queue of AXIS beats to be expected
     **************************************************************************/
    task expect_beat (
-		input logic [$bits(conn.tdata)-1:0] tdata = 0,
-		input logic [$bits(conn.tstrb)-1:0] tstrb = 0,
-		input logic [$bits(conn.tkeep)-1:0] tkeep = 0,
-		input logic			    tlast = 0,
-		input logic [$bits(conn.tid)-1:0]   tid = 0,
-		input logic [$bits(conn.tdest)-1:0] tdest = 0,
-		input logic [$bits(conn.tuser)-1:0] tuser = 0
+		input logic [conn.NUM_DATA_BITS-1:0] tdata = 0,
+		input logic [conn.NUM_STRB_BITS-1:0] tstrb = 0,
+		input logic [conn.NUM_KEEP_BITS-1:0] tkeep = 0,
+		input logic			     tlast = 0,
+		input logic [conn.NUM_ID_BITS-1:0]   tid = 0,
+		input logic [conn.NUM_DEST_BITS-1:0] tdest = 0,
+		input logic [conn.NUM_USER_BITS-1:0] tuser = 0
 	       );
 
       axis_beat_t temp;
@@ -84,7 +84,7 @@ module axis_slave_bfm #(parameter
 
 	 // Add output beat to mailbox
 	 $timeformat(-9, 2, " ns", 20);
-	 $display("%t: s_axis - Expecting Data - Data: %X, Keep: %x, Last: %x, User: %x", $time, temp.tdata, temp.tkeep, temp.tlast, temp.tuser);
+	 $display("%t: %s - Expecting Data - Data: %X, Keep: %x, Last: %x, User: %x", $time, BFM_NAME, temp.tdata, temp.tkeep, temp.tlast, temp.tuser);
 	 s_axis.expect_beat(temp);
 
       end
@@ -95,13 +95,13 @@ module axis_slave_bfm #(parameter
    // Interface connections
    ////////////////////////////////////////////////////////////////////////////
    ////////////////////////////////////////////////////////////////////////////
-   localparam TUSER_WIDTH = ($bits(conn.tuser) > 0) ? $bits(conn.tuser) : 1;
-   localparam TDEST_WIDTH = ($bits(conn.tdest) > 0) ? $bits(conn.tdest) : 1;
-   localparam TID_WIDTH   = ($bits(conn.tid  ) > 0) ? $bits(conn.tid  ) : 1;
-   localparam TLAST_WIDTH = ($bits(conn.tlast) > 0) ? $bits(conn.tlast) : 1;
-   localparam TKEEP_WIDTH = ($bits(conn.tkeep) > 0) ? $bits(conn.tkeep) : 1;
-   localparam TSTRB_WIDTH = ($bits(conn.tstrb) > 0) ? $bits(conn.tstrb) : 1;
-   localparam TDATA_WIDTH = ($bits(conn.tdata) > 0) ? $bits(conn.tdata) : 1;
+   localparam TUSER_WIDTH = conn.NUM_USER_BITS > 0 ? conn.NUM_USER_BITS : 1;
+   localparam TDEST_WIDTH = conn.NUM_DEST_BITS > 0 ? conn.NUM_DEST_BITS : 1;
+   localparam TID_WIDTH   = conn.NUM_ID_BITS   > 0 ? conn.NUM_ID_BITS   : 1;
+   localparam TLAST_WIDTH = conn.NUM_LAST_BITS > 0 ? conn.NUM_LAST_BITS : 1;
+   localparam TKEEP_WIDTH = conn.NUM_KEEP_BITS > 0 ? conn.NUM_KEEP_BITS : 1;
+   localparam TSTRB_WIDTH = conn.NUM_STRB_BITS > 0 ? conn.NUM_STRB_BITS : 1;
+   localparam TDATA_WIDTH = conn.NUM_DATA_BITS > 0 ? conn.NUM_DATA_BITS : 1;
 
    localparam TUSER_BASE = 0;
    localparam TDEST_BASE = TUSER_BASE + TUSER_WIDTH;
@@ -115,7 +115,7 @@ module axis_slave_bfm #(parameter
 
    // Write address channel
    handshake_if    #(.DATA_BITS(HS_BUS_WIDTH)) axis_conn(.clk(conn.aclk), .rst(conn.aresetn));
-   handshake_slave #(.IFACE_NAME("s_axis"), .ALWAYS_READY('1), .FAIL_ON_MISMATCH(FAIL_ON_MISMATCH), .VERBOSE("FALSE")) s_axis (axis_conn);
+   handshake_slave #(.IFACE_NAME(BFM_NAME), .ALWAYS_READY('1), .FAIL_ON_MISMATCH(FAIL_ON_MISMATCH), .VERBOSE("FALSE")) s_axis (axis_conn);
 
    assign axis_conn.valid                                     = conn.tvalid;
    assign conn.tready                                         = axis_conn.ready;
