@@ -78,7 +78,7 @@ module axis_master_bfm #(parameter
    localparam HS_BUS_WIDTH = TUSER_WIDTH + TDEST_WIDTH + TID_WIDTH + TLAST_WIDTH + TKEEP_WIDTH + TSTRB_WIDTH + TDATA_WIDTH;
 
    // Write address channel
-   handshake_if     #(.DATA_BITS(HS_BUS_WIDTH)) axis_conn(.clk(conn.aclk), .rst(conn.aresetn));
+   handshake_if     #(.DATA_BITS(HS_BUS_WIDTH)) axis_conn(.clk(conn.aclk), .arstn(conn.aresetn));
    handshake_master #(.IFACE_NAME(BFM_NAME), .VERBOSE("FALSE")) m_axis (axis_conn);
 
    assign conn.tvalid     = axis_conn.valid;
